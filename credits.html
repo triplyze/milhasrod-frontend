@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comprar créditos</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- Supabase UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.5/dist/umd/supabase.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/app.js" defer></script>
+</head>
+<body>
+<header>
+  <div class="row">
+    <div class="logo">Milhas do Rod</div>
+  </div>
+  <div class="row" style="gap:8px">
+    <span class="badge">Saldo: <span id="balance">—</span></span>
+    <button class="btn secondary" data-when="out" id="login-google-btn">Entrar com Google</button>
+    <div data-when="out" class="row" style="gap:6px">
+      <input class="input" id="email" placeholder="Seu e-mail" style="width:220px">
+      <button class="btn" id="login-email-btn">Receber link</button>
+    </div>
+    <button class="btn link" data-when="in" onclick="location.href='/credits.html'">Comprar créditos</button>
+    <button class="btn link" data-when="in" onclick="location.href='/history.html'">Extrato</button>
+    <button class="btn" data-when="in" id="logout-btn">Sair</button>
+  </div>
+</header>
+<div id="toast"></div>
+<div class="container">
+
+  <h1>Comprar créditos</h1>
+  <p class="small">Escolha um plano. O pagamento é processado pelo Stripe.</p>
+  <div class="grid">
+    <div class="card center">
+      <h2>5 créditos</h2>
+      <p>R$ 20,00</p>
+      <button class="btn" data-plan="PRICE_5">Selecionar</button>
+    </div>
+    <div class="card center">
+      <h2>20 créditos</h2>
+      <p>R$ 60,00</p>
+      <button class="btn" data-plan="PRICE_20">Selecionar</button>
+    </div>
+    <div class="card center">
+      <h2>100 créditos</h2>
+      <p>R$ 250,00</p>
+      <button class="btn" data-plan="PRICE_100">Selecionar</button>
+    </div>
+    <div class="card center">
+      <h2>Ilimitado</h2>
+      <p>R$ 500,00</p>
+      <button class="btn" data-plan="PRICE_UNLIMITED">Selecionar</button>
+    </div>
+  </div>
+</div><footer class='center small'>© 2025 Milhas do Rod</footer></body></html>
