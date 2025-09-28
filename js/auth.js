@@ -1,97 +1,98 @@
 // js/auth.js
 (() => {
   const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supa = window.supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, detectSessionInUrl: true }
+  });
 
-  // Exibe/atualiza saldo e estado do usuário no header
-  async function refreshHeader() {
-    const { data: { session } } = await supabase.auth.getSession();
-    const emailInput = document.querySelector('#email-input');
-    const loginBtn   = document.querySelector('#btn-magiclink');
-    const googleBtn  = document.querySelector('#btn-google');
-    const logoutBtn  = document.querySelector('#btn-logout');
-    const saldoEl    = document.querySelector('#saldo-badge');
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-    if (session) {
-      // logged in
-      if (emailInput) emailInput.value = session.user.email || '';
-      if (loginBtn)  loginBtn.style.display  = 'none';
-      if (googleBtn) googleBtn.style.display = 'none';
-      if (logoutBtn) logoutBtn.style.display = 'inline-flex';
-      if (saldoEl)    saldoEl.textContent = '…';
+  // Helpers para achar botões mesmo sem id fixo
+  function buttonByText(text) {
+    return $$('button, a, input[type=button], input[type=submit]')
+      .find(el => (el.textContent || el.value || '').trim().toLowerCase() === text.toLowerCase());
+  }
 
-      // pega saldo
-      try {
-        const res = await fetch(`${window.APP_CONFIG.API_BASE}/api/credits`, {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        });
-        const json = await res.json();
-        if (saldoEl) saldoEl.textContent = json?.balance ?? 0;
-      } catch(_) {
-        if (saldoEl) saldoEl.textContent = '0';
-      }
-    } else {
-      // logged out
-      if (loginBtn)  loginBtn.style.display  = 'inline-flex';
-      if (googleBtn) googleBtn.style.display = 'inline-flex';
-      if (logoutBtn) logoutBtn.style.display = 'none';
-      if (saldoEl)    saldoEl.textContent = '—';
+  async function updateAuthUI() {
+    const { data: { session } } = await supa.auth.getSession();
+    window.__session = session || null;
+    console.log('[auth] session?', !!session);
+
+    const saldoEl = $('[data-balance], #saldo, .saldo-badge, [data-role="saldo"]');
+    if (saldoEl) saldoEl.textContent = '—';
+    document.dispatchEvent(new CustomEvent('auth:ready', { detail: { session } }));
+  }
+
+  async function sendMagicLink(email) {
+    if (!email) { alert('Informe seu e-mail 🙂'); return; }
+    const redirectTo = `${window.FRONTEND_URL}/`;
+    const { error } = await supa.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: redirectTo }
+    });
+    if (error) {
+      console.error('[auth] magic link error', error);
+      alert('Falhou enviar o link. Verifique o e-mail.');
+      return;
     }
+    alert('Link enviado! Confira sua caixa de entrada. 📬');
   }
 
-  // Magic Link
-  async function sendMagicLink() {
-    const email = (document.querySelector('#email-input')?.value || '').trim();
-    if (!email) return alert('Digite seu e-mail.');
-    const redirectTo = `${location.origin}/auth/callback.html`;
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo }});
-    if (error) return alert('Erro: ' + error.message);
-    alert('Prontinho! Olhe seu e-mail e clique no link.');
-  }
-
-  // Google OAuth
   async function loginWithGoogle() {
-    const redirectTo = `${location.origin}/auth/callback.html`;
-    const { error } = await supabase.auth.signInWithOAuth({
+    const redirectTo = `${window.FRONTEND_URL}/`;
+    const { error } = await supa.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo }
     });
-    if (error) alert('Erro: ' + error.message);
-  }
-
-  // Logout
-  async function doLogout() {
-    await supabase.auth.signOut();
-    location.reload();
-  }
-
-  // Callback (abre em /auth/callback.html)
-  async function handleCallbackIfNeeded() {
-    // Se o Supabase te trouxe com ?code=... (OAuth) ou hash do magiclink, trocamos por sessão
-    const hasCode = new URLSearchParams(location.search).get('code');
-    if (hasCode || location.hash.includes('access_token')) {
-      try {
-        await supabase.auth.exchangeCodeForSession(location.href);
-      } catch (_) {
-        // ignorar
-      }
-      // volta para home (ou a página que quiser)
-      location.replace('/');
+    if (error) {
+      console.error('[auth] google error', error);
+      alert('Falhou o login com Google.');
     }
   }
 
-  // Eventos da UI
-  document.addEventListener('click', (ev) => {
-    const t = ev.target;
-    if (t.matches('#btn-magiclink')) { ev.preventDefault(); sendMagicLink(); }
-    if (t.matches('#btn-google'))    { ev.preventDefault(); loginWithGoogle(); }
-    if (t.matches('#btn-logout'))    { ev.preventDefault(); doLogout(); }
+  async function signOut() {
+    await supa.auth.signOut();
+    location.reload();
+  }
+
+  // Wire automático por texto/ids comuns
+  document.addEventListener('DOMContentLoaded', () => {
+    // Receber link
+    const magicBtn = $('#btn-magic') || buttonByText('Receber link');
+    const emailInput = $('#email, input[type=email]');
+
+    if (magicBtn) {
+      magicBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const email = (emailInput && emailInput.value.trim()) || '';
+        console.log('[auth] magic click', email);
+        sendMagicLink(email);
+      });
+    }
+
+    // Google
+    const googleBtn = $('#btn-google') || buttonByText('Entrar com Google');
+    if (googleBtn) {
+      googleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('[auth] google click');
+        loginWithGoogle();
+      });
+    }
+
+    // Sair
+    const sairBtn = $('#btn-signout') || buttonByText('Sair');
+    if (sairBtn) {
+      sairBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        signOut();
+      });
+    }
+
+    updateAuthUI();
   });
 
-  // Expor helpers se precisar em outros scripts
-  window.__auth = { supabase, refreshHeader };
-
-  // Inicializa
-  handleCallbackIfNeeded();
-  refreshHeader();
+  // Exponho o supa pra outros arquivos
+  window.getSession = async () => (await supa.auth.getSession()).data.session || null;
 })();
