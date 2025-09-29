@@ -1,69 +1,114 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Milhas do Rod — Buscar passagens</title>
+  <title>Milhas do Rod – Buscar passagens</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- (opcional) seu css -->
-  <link rel="stylesheet" href="styles.css" />
+  <style>
+    :root{
+      --bg:#f6fbfc;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#6b7280;
+      --brand:#13837d;
+      --brand-2:#0f6a65;
+      --ring:rgba(19,131,125,.25);
+      --shadow:0 10px 20px rgba(0,0,0,.05);
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,ui-sans-serif;
+      color:var(--text);
+      background:linear-gradient(180deg,#e8f6f7, var(--bg) 120px) fixed;
+    }
+    .container{max-width:1080px;margin:0 auto;padding:24px}
+    .nav{
+      display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+      justify-content:flex-end;
+      padding:10px 24px;
+    }
+    .nav .brand{margin-right:auto;font-weight:700}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:#e9fbfa;border-radius:999px;padding:6px 12px;font-weight:600}
+    .chip small{color:var(--muted);font-weight:600}
+    input[type=email],input[type=text],input[type=date],select{
+      width:100%;height:44px;border-radius:10px;border:1px solid #e5e7eb;
+      padding:0 12px;background:#fff;outline:none;
+    }
+    input:focus,select:focus{box-shadow:0 0 0 5px var(--ring);border-color:var(--brand)}
+    .btn{
+      appearance:none;border:0;border-radius:999px;height:42px;padding:0 16px;
+      background:var(--brand);color:#fff;font-weight:700;cursor:pointer
+    }
+    .btn:hover{background:var(--brand-2)}
+    .btn.secondary{background:#e5f7f6;color:var(--brand);font-weight:700}
+    .link{color:var(--brand);font-weight:700;text-decoration:none}
+    .link:hover{text-decoration:underline}
+    .card{
+      background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+      padding:24px
+    }
+    .hero{padding:6px 24px 0}
+    h1{margin:32px 0 16px;font-size:clamp(22px,3vw,34px)}
+    .grid{display:grid;gap:16px}
+    @media(min-width:960px){.grid-2{grid-template-columns:1fr 1fr}}
+    .grid-4{display:grid;gap:12px}
+    @media(min-width:960px){.grid-4{grid-template-columns:2fr 2fr 1.2fr auto}}
+    .footer{padding:24px;text-align:center;color:var(--muted)}
+    .results{margin-top:18px}
+    .result{border:1px solid #eef2f7;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;background:#fff}
+    .muted{color:var(--muted)}
+  </style>
 </head>
 <body>
-  <!-- =================== HEADER / NAV =================== -->
-  <header class="topbar">
-    <nav class="container" style="display:flex;gap:12px;align-items:center;justify-content:space-between;">
-      <div style="display:flex;gap:12px;align-items:center;">
-        <strong>Milhas do Rod</strong>
-        <span>Saldo: <strong data-saldo>—</strong></span>
-      </div>
 
-      <div style="display:flex;gap:8px;align-items:center;">
-        <!-- login com google -->
-        <button id="btnGoogle" type="button">Entrar com Google</button>
+  <nav class="nav">
+    <div class="brand">Milhas do Rod</div>
 
-        <!-- magic link -->
-        <input id="email" type="email" placeholder="Seu e-mail" style="max-width:240px" />
-        <button id="btnMagicLink" type="button">Receber link</button>
+    <div class="chip">
+      <small>Saldo:</small>
+      <span id="balance">—</span>
+    </div>
 
-        <!-- navegação -->
-        <a href="credits.html">Comprar créditos</a>
-        <a href="extrato.html">Extrato</a>
+    <button id="btnGoogle" class="btn secondary" type="button">Entrar com Google</button>
 
-        <!-- sair -->
-        <button id="btnLogout" type="button">Sair</button>
-      </div>
-    </nav>
-  </header>
+    <input id="emailInput" type="email" placeholder="Seu e-mail" style="width:240px">
+    <button id="btnMagicLink" class="btn secondary" type="button">Receber link</button>
 
-  <!-- =================== CONTEÚDO =================== -->
-  <main class="container" style="max-width:980px;margin:32px auto;">
+    <a class="link" href="/credits.html" id="linkCredits">Comprar créditos</a>
+    <a class="link" href="/history.html" id="linkHistory">Extrato</a>
+    <button id="btnLogout" class="btn secondary" type="button">Sair</button>
+  </nav>
+
+  <header class="hero container">
     <h1>Encontre passagens mais baratas</h1>
 
-    <!-- formulário de pesquisa -->
-    <form id="searchForm" style="display:grid;gap:12px;margin-top:16px;">
-      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr;">
+    <section class="card">
+      <div class="grid-4">
         <div>
-          <label for="origin">Origem</label>
-          <input id="origin" name="origin" type="text" list="airports" placeholder="São Paulo (GRU)" />
+          <label class="muted" for="originInput">Origem</label>
+          <input id="originInput" type="text" placeholder="São Paulo (GRU)" value="São Paulo (GRU)">
         </div>
 
         <div>
-          <label for="dest">Destino</label>
-          <input id="dest" name="dest" type="text" list="airports" placeholder="Qualquer lugar" />
-        </div>
-      </div>
-
-      <div style="display:grid;gap:12px;grid-template-columns:1fr 1fr;">
-        <div>
-          <label for="date">Datas</label>
-          <!-- use date se quiser um único dia; se o seu back aceitar texto, mantenha text -->
-          <input id="date" name="date" type="text" placeholder="Data flexível" />
+          <label class="muted" for="destinationInput">Destino</label>
+          <input id="destinationInput" type="text" placeholder="Qualquer lugar">
         </div>
 
         <div>
-          <label for="pax">Passageiros</label>
-          <select id="pax" name="pax">
-            <option value="1" selected>1 adulto</option>
+          <label class="muted" for="dateInput">Datas</label>
+          <input id="dateInput" type="text" placeholder="Data flexível">
+        </div>
+
+        <div>
+          <label class="muted" for="passengersSelect">Passageiros</label>
+          <select id="passengersSelect">
+            <option value="1">1 adulto</option>
             <option value="2">2 adultos</option>
             <option value="3">3 adultos</option>
             <option value="4">4 adultos</option>
@@ -71,41 +116,20 @@
         </div>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;margin-top:8px;">
-        <button id="btnSearch" type="submit">Pesquisar</button>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:16px;justify-content:flex-end">
+        <small class="muted">Usa 1 crédito por pesquisa. Se falhar, devolvemos 🙂</small>
+        <button id="btnSearch" class="btn" type="button">Pesquisar</button>
       </div>
 
-      <small>Usa 1 crédito por pesquisa. Se falhar, devolvemos 🙂</small>
-    </form>
-  </main>
+      <div id="results" class="results grid"></div>
+    </section>
+  </header>
 
-  <footer class="container" style="text-align:center;margin:40px auto 24px;">
-    <small>© 2025 Milhas do Rod</small>
-  </footer>
+  <footer class="footer">© 2025 Milhas do Rod</footer>
 
-  <!-- lista básica de aeroportos (opcional) -->
-  <datalist id="airports">
-    <option value="São Paulo (GRU)"></option>
-    <option value="Rio de Janeiro (GIG)"></option>
-    <option value="Belo Horizonte (CNF)"></option>
-    <option value="Brasília (BSB)"></option>
-    <option value="Salvador (SSA)"></option>
-  </datalist>
-
-  <!-- =================== SCRIPTS (ordem IMPORTANTE) =================== -->
-  <!-- 1) Config com API_BASE, SUPABASE_URL e SUPABASE_ANON_KEY -->
-  <script src="js/config.js"></script>
-
-  <!-- 2) SDK do Supabase -->
-  <script src="https://esm.sh/@supabase/supabase-js"></script>
-
-  <!-- 3) App: atualiza saldo e faz a PESQUISA (usa o form#searchForm) -->
-  <script src="js/app.js"></script>
-
-  <!-- 4) Auth: lida com Google / Magic Link / Logout -->
-  <script src="js/auth.js"></script>
-
-  <!-- 5) Checkout (não é usado nesta página, mas não tem problema manter) -->
-  <script src="js/checkout.js"></script>
+  <!-- ORDEM CORRETA DOS SCRIPTS (config → auth → app) -->
+  <script src="/js/config.js" defer></script>
+  <script src="/js/auth.js" defer></script>
+  <script src="/js/app.js" defer></script>
 </body>
 </html>
