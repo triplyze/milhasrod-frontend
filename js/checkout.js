@@ -1,105 +1,83 @@
-// js/checkout.js
-(() => {
-  const API = window.APP_CONFIG.API_BASE;
+// /js/checkout.js
+(function () {
+  const C = window.APP_CONFIG || {};
+  const API_BASE = C.API_BASE || '';               // https://milhasrod.vercel.app
+  const FRONTEND_URL = C.FRONTEND_URL || location.origin;
 
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  // Reaproveita a instância criada no auth.js; se não existir, cria.
+  const sb = window.sb || supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
 
-  const PLAN_MAP = {
-    '5 créditos': 'PRICE_5',
-    '20 créditos': 'PRICE_20',
-    '100 créditos': 'PRICE_100',
-    'ilimitado': 'PRICE_UNLIMITED'
-  };
-
-  function guessPlanFromCard(btn) {
-    // Sobe até encontrar o card e lê o título
-    let card = btn.closest('section, article, div');
-    if (!card) return null;
-    // procura um título
-    const title = $('h1,h2,h3,h4', card);
-    const t = (title && title.textContent || '').trim().toLowerCase();
-    for (const key of Object.keys(PLAN_MAP)) {
-      if (t.includes(key.split(' ')[0]) && t.includes(key.split(' ')[1] || '')) {
-        return PLAN_MAP[key];
-      }
-    }
-    // Fallback: checa o texto inteiro do card
-    const whole = card.textContent.trim().toLowerCase();
-    for (const key of Object.keys(PLAN_MAP)) {
-      if (whole.includes(key.toLowerCase())) return PLAN_MAP[key];
-    }
-    return null;
+  function log(...args) { console.log('[checkout]', ...args); }
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    if (!el) { alert(msg); return; }
+    el.textContent = msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 2500);
   }
 
-  async function startCheckout(plan) {
-    try {
-      const session = await window.getSession();
-      if (!session) {
-        alert('Entre com seu e-mail ou Google primeiro 🙂');
-        return;
-      }
-      const user_id = session.user.id;
-      console.log('[checkout] creating session', { plan, user_id });
-
-      const r = await fetch(`${API}/api/stripe/create-checkout-session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        mode: 'cors',
-        body: JSON.stringify({ plan, user_id, quantity: 1 })
-      });
-      const data = await r.json().catch(() => ({}));
-
-      if (!r.ok) {
-        console.error('[checkout] backend error', data);
-        alert(`Falhou criar sessão: ${data.error || r.statusText}`);
-        return;
-      }
-      if (!data.url) {
-        console.error('[checkout] no url returned', data);
-        alert('Resposta sem URL de checkout.');
-        return;
-      }
-      window.location.href = data.url;
-    } catch (err) {
-      console.error('[checkout] exception', err);
-      alert('Erro inesperado ao iniciar o checkout.');
-    }
+  async function getToken() {
+    const { data, error } = await sb.auth.getSession();
+    if (error) { log('getSession error', error); return null; }
+    return data?.session?.access_token || null;
   }
 
-  function wireCreditsPage() {
-    const buttons = $$('button, a').filter(b => {
-      const txt = (b.textContent || b.value || '').trim().toLowerCase();
-      return txt === 'selecionar';
-    });
+  async function gotoCheckout(priceId) {
+    log('click', priceId);
 
-    if (buttons.length === 0) {
-      console.warn('[checkout] nenhum botão "Selecionar" achado');
+    if (!API_BASE) {
+      log('ERRO: API_BASE vazio'); toast('Configuração inválida (API_BASE).');
       return;
     }
 
-    buttons.forEach(btn => {
-      // 1) preferir data-plan
-      let plan = btn.dataset.plan;
-      // 2) se não tiver, deduz do card
-      if (!plan) plan = guessPlanFromCard(btn);
-      if (!plan) {
-        console.warn('[checkout] não consegui deduzir plano para um botão', btn);
+    const token = await getToken();
+    if (!token) {
+      toast('Você precisa estar logado para comprar créditos.');
+      return;
+    }
+
+    const url = `${API_BASE}/api/stripe/create-checkout-session`;
+    const payload = { price_id: priceId, success_url: `${FRONTEND_URL}/success.html`, cancel_url: `${FRONTEND_URL}/cancel.html` };
+
+    log('POST', url, payload);
+
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+      });
+
+      log('resp status', resp.status);
+      if (!resp.ok) {
+        const txt = await resp.text().catch(()=> '');
+        log('resp not ok', txt);
+        toast('Erro ao criar checkout.');
         return;
       }
 
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('[checkout] click', plan);
-        startCheckout(plan);
-      });
+      const data = await resp.json();
+      log('resp json', data);
 
-      // marca visualmente (debug)
-      btn.dataset.wired = '1';
-    });
-
-    console.log(`[checkout] ligados ${buttons.filter(b => b.dataset.wired === '1').length} botões`);
+      if (data?.url) {
+        window.location.href = data.url; // redireciona para o Stripe
+      } else {
+        toast('Resposta inválida do servidor.');
+      }
+    } catch (e) {
+      log('fetch error', e);
+      toast('Falha de rede ao iniciar checkout.');
+    }
   }
 
-  document.addEventListener('DOMContentLoaded', wireCreditsPage);
+  function wireButtons() {
+    const btns = document.querySelectorAll('button[data-plan]');
+    btns.forEach(btn => {
+      btn.addEventListener('click', () => gotoCheckout(btn.dataset.plan));
+    });
+    log('ligados', btns.length, 'botões');
+  }
+
+  document.addEventListener('DOMContentLoaded', wireButtons);
 })();

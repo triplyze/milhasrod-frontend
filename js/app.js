@@ -1,88 +1,97 @@
-// js/app.js
-(() => {
-  const CFG = window.APP_CONFIG || {};
-  const API = CFG.API_BASE || "";              // "" = mesmo domínio do Vercel
-  const SUPA_URL = CFG.SUPABASE_URL;
-  const SUPA_KEY = CFG.SUPABASE_ANON_KEY;
+// /js/app.js
+(function () {
+  const C = window.APP_CONFIG || {};
+  const API_BASE = C.API_BASE || '';
+  const sb = window.sb || supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
 
-  // supabase já está no projeto (login/magic link estão ok)
-  const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
-
-  // ---------------- SALDO (top bar)
-  const saldoEl = document.querySelector("[data-saldo]"); // <span data-saldo>—</span>
+  function log(...args) { console.log('[app]', ...args); }
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    if (!el) { alert(msg); return; }
+    el.textContent = msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 2500);
+  }
 
   async function getToken() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
+    const { data, error } = await sb.auth.getSession();
+    if (error) { log('getSession error', error); return null; }
+    return data?.session?.access_token || null;
   }
 
-  async function updateBalance() {
+  // Atualiza balance (usa a view user_balance que você criou)
+  async function refreshBalance() {
     try {
-      const token = await getToken();
-      if (!token || !saldoEl) return;
-      const r = await fetch(`${API}/api/credits`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!r.ok) throw new Error(await r.text());
-      const j = await r.json();
-      saldoEl.textContent = (j?.balance ?? "—");
-    } catch (e) {
-      console.warn("saldo:", e.message);
-    }
+      const { data, error } = await sb
+        .from('user_balance')
+        .select('balance')
+        .single();
+      if (error) { log('balance error', error); return; }
+      const b = document.getElementById('balance');
+      if (b) b.textContent = (data?.balance ?? 0);
+    } catch (e) { log('balance exc', e); }
   }
-  supabase.auth.onAuthStateChange(() => updateBalance());
-  updateBalance();
 
-  // ---------------- PESQUISA
-  const form = document.getElementById("searchForm");
-  if (form) {
-    form.addEventListener("submit", async (ev) => {
-      ev.preventDefault();
+  // Pesquisa (aqui debitamos 1 crédito e você depois chama sua API real de busca)
+  async function onSearch() {
+    const token = await getToken();
+    if (!token) { toast('Entre para pesquisar.'); return; }
+    if (!API_BASE) { toast('Configuração inválida (API_BASE).'); return; }
 
-      const origin = form.origin.value.trim();
-      const dest   = form.dest.value.trim();
-      const date   = form.date.value.trim();
-      const pax    = form.pax?.value || 1;
+    const ref = `search_${Date.now()}`;
 
-      const token = await getToken();
-      if (!token) {
-        alert("Faça login para pesquisar.");
+    const body = { amount: 1, ref, reason: 'search' };
+    const url  = `${API_BASE}/api/credits/spend`;
+
+    log('POST', url, body);
+
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(body),
+      });
+
+      log('resp status', resp.status);
+      const json = await resp.json().catch(()=> ({}));
+      log('resp json', json);
+
+      if (!resp.ok || json?.success === false) {
+        toast(json?.message || 'Erro ao debitar crédito.');
         return;
       }
 
-      try {
-        // ajuste os nomes dos parâmetros se seu endpoint esperar outros
-        const url = `${API}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(dest)}&date=${encodeURIComponent(date)}&adults=${encodeURIComponent(pax)}`;
+      toast('Pesquisa iniciada! (crédito debitado)');
+      refreshBalance();
 
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        if (res.status === 402) {            // código que usamos p/ saldo insuficiente
-          alert("Créditos insuficientes.");
-          return;
-        }
-        if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(txt || `HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        // salva e vai para uma página simples de resultados (opcional)
-        localStorage.setItem("lastResults", JSON.stringify(data));
-        window.location.href = "results.html";
-      } catch (err) {
-        console.error(err);
-        alert("Erro na pesquisa. Veja o console/network p/ detalhes.");
-      }
-    });
+      // TODO: aqui você chama sua API de busca de voos e exibe resultados
+      // ex.: fetch(`${API_BASE}/api/search?from=...&to=...`)
+    } catch (e) {
+      log('search error', e);
+      toast('Falha de rede na pesquisa.');
+    }
   }
 
-  // ---------------- results.html (opcional)
-  const resPre = document.getElementById("results");
-  if (resPre) {
-    const raw = localStorage.getItem("lastResults");
-    if (raw) resPre.textContent = JSON.stringify(JSON.parse(raw), null, 2);
+  function wireSearch() {
+    const btn = document.getElementById('search-btn');
+    if (btn) btn.addEventListener('click', onSearch);
   }
+
+  // Mostra/oculta elementos conforme login
+  async function syncUI() {
+    const { data } = await sb.auth.getSession();
+    const logged = !!data?.session;
+
+    document.querySelectorAll('[data-when="in"]').forEach(el => el.style.display = logged ? '' : 'none');
+    document.querySelectorAll('[data-when="out"]').forEach(el => el.style.display = logged ? 'none' : '');
+
+    if (logged) refreshBalance();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    wireSearch();
+    syncUI();
+    log('ready');
+  });
 })();
