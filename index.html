@@ -9,64 +9,40 @@
 
   <style>
     :root{
-      --bg:#f6fbfc;
-      --card:#ffffff;
-      --text:#0f172a;
-      --muted:#6b7280;
-      --brand:#13837d;
-      --brand-2:#0f6a65;
-      --ring:rgba(19,131,125,.25);
-      --shadow:0 10px 20px rgba(0,0,0,.05);
-      --radius:14px;
+      --bg:#f6fbfc;--card:#ffffff;--text:#0f172a;--muted:#6b7280;
+      --brand:#13837d;--brand-2:#0f6a65;--ring:rgba(19,131,125,.25);
+      --shadow:0 10px 20px rgba(0,0,0,.05);--radius:14px;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,ui-sans-serif;
-      color:var(--text);
-      background:linear-gradient(180deg,#e8f6f7, var(--bg) 120px) fixed;
-    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,ui-sans-serif;color:var(--text);
+      background:linear-gradient(180deg,#e8f6f7,var(--bg) 120px) fixed;}
     .container{max-width:1080px;margin:0 auto;padding:24px}
-    .nav{
-      display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-      justify-content:flex-end;
-      padding:10px 24px;
-    }
+    .nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;padding:10px 24px}
     .nav .brand{margin-right:auto;font-weight:700}
     .chip{display:inline-flex;align-items:center;gap:8px;background:#e9fbfa;border-radius:999px;padding:6px 12px;font-weight:600}
     .chip small{color:var(--muted);font-weight:600}
     input[type=email],input[type=text],input[type=date],select{
-      width:100%;height:44px;border-radius:10px;border:1px solid #e5e7eb;
-      padding:0 12px;background:#fff;outline:none;
-    }
+      width:100%;height:44px;border-radius:10px;border:1px solid #e5e7eb;padding:0 12px;background:#fff;outline:none}
     input:focus,select:focus{box-shadow:0 0 0 5px var(--ring);border-color:var(--brand)}
-    .btn{
-      appearance:none;border:0;border-radius:999px;height:42px;padding:0 16px;
-      background:var(--brand);color:#fff;font-weight:700;cursor:pointer
-    }
-    .btn:hover{background:var(--brand-2)}
-    .btn.secondary{background:#e5f7f6;color:var(--brand);font-weight:700}
-    .link{color:var(--brand);font-weight:700;text-decoration:none}
-    .link:hover{text-decoration:underline}
-    .card{
-      background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
-      padding:24px
-    }
-    .hero{padding:6px 24px 0}
-    h1{margin:32px 0 16px;font-size:clamp(22px,3vw,34px)}
-    .grid{display:grid;gap:16px}
-    @media(min-width:960px){.grid-2{grid-template-columns:1fr 1fr}}
-    .grid-4{display:grid;gap:12px}
-    @media(min-width:960px){.grid-4{grid-template-columns:2fr 2fr 1.2fr auto}}
+    .btn{appearance:none;border:0;border-radius:999px;height:42px;padding:0 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer}
+    .btn:hover{background:var(--brand-2)} .btn.secondary{background:#e5f7f6;color:var(--brand);font-weight:700}
+    .link{color:var(--brand);font-weight:700;text-decoration:none}.link:hover{text-decoration:underline}
+    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+    .hero{padding:6px 24px 0} h1{margin:32px 0 16px;font-size:clamp(22px,3vw,34px)}
+    .grid{display:grid;gap:16px} @media(min-width:960px){.grid-2{grid-template-columns:1fr 1fr}}
+    .grid-4{display:grid;gap:12px} @media(min-width:960px){.grid-4{grid-template-columns:2fr 2fr 1.2fr auto}}
     .footer{padding:24px;text-align:center;color:var(--muted)}
-    .results{margin-top:18px}
-    .result{border:1px solid #eef2f7;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;background:#fff}
+    .results{margin-top:18px} .result{border:1px solid #eef2f7;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;background:#fff}
     .muted{color:var(--muted)}
   </style>
+
+  <!-- ORDEM CORRETA DOS SCRIPTS -->
+  <script defer src="/js/config.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.5/dist/umd/supabase.js"></script>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/app.js"></script>
 </head>
 <body>
-
   <nav class="nav">
     <div class="brand">Milhas do Rod</div>
 
@@ -87,31 +63,25 @@
 
   <header class="hero container">
     <h1>Encontre passagens mais baratas</h1>
-
     <section class="card">
       <div class="grid-4">
         <div>
           <label class="muted" for="originInput">Origem</label>
           <input id="originInput" type="text" placeholder="São Paulo (GRU)" value="São Paulo (GRU)">
         </div>
-
         <div>
           <label class="muted" for="destinationInput">Destino</label>
           <input id="destinationInput" type="text" placeholder="Qualquer lugar">
         </div>
-
         <div>
           <label class="muted" for="dateInput">Datas</label>
           <input id="dateInput" type="text" placeholder="Data flexível">
         </div>
-
         <div>
           <label class="muted" for="passengersSelect">Passageiros</label>
           <select id="passengersSelect">
-            <option value="1">1 adulto</option>
-            <option value="2">2 adultos</option>
-            <option value="3">3 adultos</option>
-            <option value="4">4 adultos</option>
+            <option value="1">1 adulto</option><option value="2">2 adultos</option>
+            <option value="3">3 adultos</option><option value="4">4 adultos</option>
           </select>
         </div>
       </div>
@@ -126,10 +96,5 @@
   </header>
 
   <footer class="footer">© 2025 Milhas do Rod</footer>
-
-  <!-- ORDEM CORRETA DOS SCRIPTS (config → auth → app) -->
-  <script src="/js/config.js" defer></script>
-  <script src="/js/auth.js" defer></script>
-  <script src="/js/app.js" defer></script>
 </body>
 </html>
