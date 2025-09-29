@@ -1,16 +1,3 @@
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- seus CSS aqui -->
-
-  <!-- ORDEM IMPORTANTE DOS SCRIPTS -->
-	<script defer src="/js/config.js"></script>
-	<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.5/dist/umd/supabase.js"></script>
-	<script defer src="/js/auth.js"></script>
-	<script defer src="/js/checkout.js"></script>
-</head>
-
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -18,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Comprar créditos</title>
   <link rel="stylesheet" href="/css/styles.css">
-  <!-- Supabase UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.5/dist/umd/supabase.js"></script>
-  <script src="/js/config.js"></script>
-  <script src="/js/app.js" defer></script>
+
+  <!-- ORDEM DOS SCRIPTS -->
+  <script defer src="/js/config.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.5/dist/umd/supabase.js"></script>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/checkout.js"></script>
 </head>
 <body>
 <header>
@@ -40,11 +29,13 @@
     <button class="btn" data-when="in" id="logout-btn">Sair</button>
   </div>
 </header>
-<div id="toast"></div>
-<div class="container">
 
+<div id="toast"></div>
+
+<div class="container">
   <h1>Comprar créditos</h1>
   <p class="small">Escolha um plano. O pagamento é processado pelo Stripe.</p>
+
   <div class="grid">
     <div class="card center">
       <h2>5 créditos</h2>
@@ -67,4 +58,8 @@
       <button class="btn" data-plan="PRICE_UNLIMITED">Selecionar</button>
     </div>
   </div>
-</div><footer class='center small'>© 2025 Milhas do Rod</footer></body></html>
+</div>
+
+<footer class="center small">© 2025 Milhas do Rod</footer>
+</body>
+</html>

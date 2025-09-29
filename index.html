@@ -1,100 +1,70 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Milhas do Rod – Buscar passagens</title>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Milhas do Rod</title>
+  <link rel="stylesheet" href="/css/styles.css">
 
-  <style>
-    :root{
-      --bg:#f6fbfc;--card:#ffffff;--text:#0f172a;--muted:#6b7280;
-      --brand:#13837d;--brand-2:#0f6a65;--ring:rgba(19,131,125,.25);
-      --shadow:0 10px 20px rgba(0,0,0,.05);--radius:14px;
-    }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,ui-sans-serif;color:var(--text);
-      background:linear-gradient(180deg,#e8f6f7,var(--bg) 120px) fixed;}
-    .container{max-width:1080px;margin:0 auto;padding:24px}
-    .nav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end;padding:10px 24px}
-    .nav .brand{margin-right:auto;font-weight:700}
-    .chip{display:inline-flex;align-items:center;gap:8px;background:#e9fbfa;border-radius:999px;padding:6px 12px;font-weight:600}
-    .chip small{color:var(--muted);font-weight:600}
-    input[type=email],input[type=text],input[type=date],select{
-      width:100%;height:44px;border-radius:10px;border:1px solid #e5e7eb;padding:0 12px;background:#fff;outline:none}
-    input:focus,select:focus{box-shadow:0 0 0 5px var(--ring);border-color:var(--brand)}
-    .btn{appearance:none;border:0;border-radius:999px;height:42px;padding:0 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer}
-    .btn:hover{background:var(--brand-2)} .btn.secondary{background:#e5f7f6;color:var(--brand);font-weight:700}
-    .link{color:var(--brand);font-weight:700;text-decoration:none}.link:hover{text-decoration:underline}
-    .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
-    .hero{padding:6px 24px 0} h1{margin:32px 0 16px;font-size:clamp(22px,3vw,34px)}
-    .grid{display:grid;gap:16px} @media(min-width:960px){.grid-2{grid-template-columns:1fr 1fr}}
-    .grid-4{display:grid;gap:12px} @media(min-width:960px){.grid-4{grid-template-columns:2fr 2fr 1.2fr auto}}
-    .footer{padding:24px;text-align:center;color:var(--muted)}
-    .results{margin-top:18px} .result{border:1px solid #eef2f7;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;background:#fff}
-    .muted{color:var(--muted)}
-  </style>
-
-  <!-- ORDEM CORRETA DOS SCRIPTS -->
+  <!-- ORDEM DOS SCRIPTS -->
   <script defer src="/js/config.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.5/dist/umd/supabase.js"></script>
   <script defer src="/js/auth.js"></script>
   <script defer src="/js/app.js"></script>
 </head>
 <body>
-  <nav class="nav">
-    <div class="brand">Milhas do Rod</div>
-
-    <div class="chip">
-      <small>Saldo:</small>
-      <span id="balance">—</span>
+<header>
+  <div class="row">
+    <div class="logo">Milhas do Rod</div>
+  </div>
+  <div class="row" style="gap:8px">
+    <span class="badge">Saldo: <span id="balance">—</span></span>
+    <button class="btn secondary" data-when="out" id="login-google-btn">Entrar com Google</button>
+    <div data-when="out" class="row" style="gap:6px">
+      <input class="input" id="email" placeholder="Seu e-mail" style="width:220px">
+      <button class="btn" id="login-email-btn">Receber link</button>
     </div>
+    <button class="btn link" data-when="in" onclick="location.href='/credits.html'">Comprar créditos</button>
+    <button class="btn link" data-when="in" onclick="location.href='/history.html'">Extrato</button>
+    <button class="btn" data-when="in" id="logout-btn">Sair</button>
+  </div>
+</header>
 
-    <button id="btnGoogle" class="btn secondary" type="button">Entrar com Google</button>
+<div id="toast"></div>
 
-    <input id="emailInput" type="email" placeholder="Seu e-mail" style="width:240px">
-    <button id="btnMagicLink" class="btn secondary" type="button">Receber link</button>
+<div class="container">
+  <h1>Encontre passagens mais baratas</h1>
 
-    <a class="link" href="/credits.html" id="linkCredits">Comprar créditos</a>
-    <a class="link" href="/history.html" id="linkHistory">Extrato</a>
-    <button id="btnLogout" class="btn secondary" type="button">Sair</button>
-  </nav>
-
-  <header class="hero container">
-    <h1>Encontre passagens mais baratas</h1>
-    <section class="card">
-      <div class="grid-4">
-        <div>
-          <label class="muted" for="originInput">Origem</label>
-          <input id="originInput" type="text" placeholder="São Paulo (GRU)" value="São Paulo (GRU)">
-        </div>
-        <div>
-          <label class="muted" for="destinationInput">Destino</label>
-          <input id="destinationInput" type="text" placeholder="Qualquer lugar">
-        </div>
-        <div>
-          <label class="muted" for="dateInput">Datas</label>
-          <input id="dateInput" type="text" placeholder="Data flexível">
-        </div>
-        <div>
-          <label class="muted" for="passengersSelect">Passageiros</label>
-          <select id="passengersSelect">
-            <option value="1">1 adulto</option><option value="2">2 adultos</option>
-            <option value="3">3 adultos</option><option value="4">4 adultos</option>
-          </select>
-        </div>
+  <div class="card">
+    <div class="grid" style="grid-template-columns: 1fr 1fr">
+      <div>
+        <label>Origem</label>
+        <input id="from" class="input" value="São Paulo (GRU)" />
       </div>
-
-      <div style="display:flex;align-items:center;gap:12px;margin-top:16px;justify-content:flex-end">
-        <small class="muted">Usa 1 crédito por pesquisa. Se falhar, devolvemos 🙂</small>
-        <button id="btnSearch" class="btn" type="button">Pesquisar</button>
+      <div>
+        <label>Destino</label>
+        <input id="to" class="input" placeholder="Qualquer lugar" />
       </div>
+      <div>
+        <label>Datas</label>
+        <input id="date" class="input" placeholder="Data flexível" />
+      </div>
+      <div>
+        <label>Passageiros</label>
+        <select id="pax" class="input">
+          <option value="1">1 adulto</option>
+          <option value="2">2 adultos</option>
+          <option value="3">3 adultos</option>
+        </select>
+      </div>
+    </div>
+    <div class="row end" style="margin-top:12px">
+      <button class="btn" id="search-btn">Pesquisar</button>
+    </div>
+    <p class="small">Usa 1 crédito por pesquisa. Se falhar, devolvemos 🙂</p>
+  </div>
+</div>
 
-      <div id="results" class="results grid"></div>
-    </section>
-  </header>
-
-  <footer class="footer">© 2025 Milhas do Rod</footer>
+<footer class="center small">© 2025 Milhas do Rod</footer>
 </body>
 </html>
