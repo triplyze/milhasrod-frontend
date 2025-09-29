@@ -1,62 +1,88 @@
 // js/app.js
 (() => {
-  const API = window.APP_CONFIG.API_BASE;
-  const $ = (s, r=document) => r.querySelector(s);
-  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const CFG = window.APP_CONFIG || {};
+  const API = CFG.API_BASE || "";              // "" = mesmo domínio do Vercel
+  const SUPA_URL = CFG.SUPABASE_URL;
+  const SUPA_KEY = CFG.SUPABASE_ANON_KEY;
 
-  // Atualiza saldo no topo (se existir)
-  async function refreshBalance() {
-    try {
-      const session = await window.getSession();
-      const saldoEl = $('[data-balance], #saldo, .saldo-badge, [data-role="saldo"]');
-      if (!saldoEl) return;
+  // supabase já está no projeto (login/magic link estão ok)
+  const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
-      if (!session) { saldoEl.textContent = '—'; return; }
-      const r = await fetch(`${API}/api/credits?user_id=${encodeURIComponent(session.user.id)}`, { mode: 'cors' });
-      const data = await r.json();
-      saldoEl.textContent = (data && (data.balance ?? data[0]?.balance)) ?? '0';
-    } catch (e) {
-      console.warn('[app] saldo erro', e);
-    }
+  // ---------------- SALDO (top bar)
+  const saldoEl = document.querySelector("[data-saldo]"); // <span data-saldo>—</span>
+
+  async function getToken() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token || null;
   }
 
-  function wireSearch() {
-    const searchBtn = $$('button, input[type=submit], a').find(el => {
-      const t = (el.textContent || el.value || '').trim().toLowerCase();
-      return t === 'pesquisar';
-    });
-    if (!searchBtn) return;
+  async function updateBalance() {
+    try {
+      const token = await getToken();
+      if (!token || !saldoEl) return;
+      const r = await fetch(`${API}/api/credits`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const j = await r.json();
+      saldoEl.textContent = (j?.balance ?? "—");
+    } catch (e) {
+      console.warn("saldo:", e.message);
+    }
+  }
+  supabase.auth.onAuthStateChange(() => updateBalance());
+  updateBalance();
 
-    searchBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const session = await window.getSession();
-      if (!session) { alert('Faça login para pesquisar 🙂'); return; }
+  // ---------------- PESQUISA
+  const form = document.getElementById("searchForm");
+  if (form) {
+    form.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
 
-      // Exemplo: gastar 1 crédito antes de pesquisar (ajuste pro seu endpoint real)
+      const origin = form.origin.value.trim();
+      const dest   = form.dest.value.trim();
+      const date   = form.date.value.trim();
+      const pax    = form.pax?.value || 1;
+
+      const token = await getToken();
+      if (!token) {
+        alert("Faça login para pesquisar.");
+        return;
+      }
+
       try {
-        const r = await fetch(`${API}/api/credits/spend`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          mode: 'cors',
-          body: JSON.stringify({ user_id: session.user.id, amount: 1, reason: 'search', ref: 'search_ui' })
+        // ajuste os nomes dos parâmetros se seu endpoint esperar outros
+        const url = `${API}/api/search?from=${encodeURIComponent(origin)}&to=${encodeURIComponent(dest)}&date=${encodeURIComponent(date)}&adults=${encodeURIComponent(pax)}`;
+
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const j = await r.json().catch(()=> ({}));
-        if (!r.ok || j.success === false) {
-          alert('Sem créditos suficientes ou erro ao debitar.');
+
+        if (res.status === 402) {            // código que usamos p/ saldo insuficiente
+          alert("Créditos insuficientes.");
           return;
         }
-        alert('OK! (Aqui você chamaria sua rota de pesquisa de voos)');
-        refreshBalance();
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // salva e vai para uma página simples de resultados (opcional)
+        localStorage.setItem("lastResults", JSON.stringify(data));
+        window.location.href = "results.html";
       } catch (err) {
-        console.error('[search] erro', err);
-        alert('Erro ao processar a pesquisa.');
+        console.error(err);
+        alert("Erro na pesquisa. Veja o console/network p/ detalhes.");
       }
     });
   }
 
-  document.addEventListener('auth:ready', refreshBalance);
-  document.addEventListener('DOMContentLoaded', () => {
-    wireSearch();
-    refreshBalance();
-  });
+  // ---------------- results.html (opcional)
+  const resPre = document.getElementById("results");
+  if (resPre) {
+    const raw = localStorage.getItem("lastResults");
+    if (raw) resPre.textContent = JSON.stringify(JSON.parse(raw), null, 2);
+  }
 })();
