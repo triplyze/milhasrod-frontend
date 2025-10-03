@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext'
 const CreditsModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const { user, refreshCredits } = useAuth()
+  const { user } = useAuth()
 
   if (!isOpen) return null
 

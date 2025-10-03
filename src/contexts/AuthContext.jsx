@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { supabase, getCurrentUser, getSession } from '../lib/supabase'
+import { supabase, getCurrentUser, getSession, signOut as supabaseSignOut } from '../lib/supabase'
 import apiService from '../services/api'
 
 const AuthContext = createContext({})
@@ -86,6 +86,12 @@ export const AuthProvider = ({ children }) => {
     loading,
     credits,
     refreshCredits,
+    async logout() {
+      await supabaseSignOut()
+      setUser(null)
+      setSession(null)
+      setCredits(0)
+    },
     isAuthenticated: !!user,
   }
 

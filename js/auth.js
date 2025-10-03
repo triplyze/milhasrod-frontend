@@ -1,3 +1,4 @@
+/* global supabase */
 // js/auth.js
 (() => {
   const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
