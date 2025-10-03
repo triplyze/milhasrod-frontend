@@ -1,3 +1,4 @@
+/* global supabase */
 // /js/checkout.js
 (function () {
   const C = window.APP_CONFIG || {};

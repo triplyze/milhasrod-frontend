@@ -1,6 +1,6 @@
 // Serviço para integração com as APIs do backend MilhasRod
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://milhasrod-backend.vercel.app';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://milhasrod.vercel.app';
 
 class ApiService {
   constructor() {
@@ -55,12 +55,13 @@ class ApiService {
     const queryParams = new URLSearchParams();
     
     // Mapear parâmetros do frontend para o formato esperado pela API
-    if (params.origin) queryParams.append('origin_airports', params.origin);
-    if (params.destination) queryParams.append('destination_airports', params.destination);
+    if (params.origin) queryParams.append('origin', params.origin);
+    if (params.destination) queryParams.append('destination', params.destination);
     if (params.startDate) queryParams.append('start_date', params.startDate);
     if (params.daysToSearch) queryParams.append('days_to_search', params.daysToSearch);
     if (params.sources) queryParams.append('sources', params.sources);
     if (params.cabins) queryParams.append('cabins', params.cabins);
+    if (params.cursor) queryParams.append('cursor', params.cursor);
 
     return this.request(`/api/search?${queryParams.toString()}`);
   }

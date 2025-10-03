@@ -1,49 +1,54 @@
-# Milhas do Rod — Frontend (estático)
+# MilhasRod — Buscador de passagens por milhas
 
-Pronto para subir no Lovable / Vercel e integrar com seu backend existente.
+Aplicação React com Vite e Tailwind pronta para publicar no Lovable ou Vercel. Ela consome o backend disponível em `https://milhasrod.vercel.app` (ou outro domínio configurado via variável de ambiente) e integra a autenticação com Supabase.
 
-## 1) Configure
+## Configuração
 
-Edite `js/config.js`:
+Crie um arquivo `.env` (ou configure as variáveis na plataforma de hospedagem) com:
 
-```js
-window.APP_CONFIG = {
-  API_BASE: '', // '' se o frontend estiver no MESMO domínio do backend
-  // ou coloque a URL do backend: 'https://milhasrod.vercel.app'
-  SUPABASE_URL: 'https://SEU_PROJETO.supabase.co',
-  SUPABASE_ANON_KEY: 'SUA_ANON_KEY'
-};
+```
+VITE_API_BASE_URL=https://milhasrod.vercel.app
+VITE_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+VITE_SUPABASE_ANON_KEY=SEU_ANON_KEY
+VITE_SUPABASE_REDIRECT_URL=https://SEU-DOMINIO/auth/callback
 ```
 
-Se o backend estiver em outro domínio, também ajuste no backend `success_url` / `cancel_url` do Stripe para apontar para `https://SEU_FRONT/success.html` e `cancel.html`.
+> O `VITE_API_BASE_URL` é opcional — se não for definido, o frontend usa `https://milhasrod.vercel.app` por padrão.
 
-## 2) Publicar
+## Scripts
 
-- Faça upload desta pasta no Lovable / Vercel.
-- Não precisa de build; são arquivos estáticos.
+```bash
+pnpm install
+pnpm dev       # ambiente local
+pnpm build     # gera os arquivos para deploy
+pnpm preview   # pré-visualiza o build
+```
 
-## 3) O que já faz
+## Principais recursos
 
-- Entrar com **Google** ou **link por e-mail** (Supabase).
-- Mostrar **saldo** atual.
-- **Comprar créditos** (chama `/api/stripe/create-checkout-session`).
-- **Gastar 1 crédito** numa busca (demo).
-- Mostrar **Extrato** (lista do ledger).
+- Busca por origem/destino com autocomplete (debounce de 300 ms).
+- Ajuste de data inicial, intervalo de dias e seleção de cabines.
+- Seleção múltipla de programas de fidelidade (chips) e atalhos para aeroportos populares.
+- Grid de resultados por dia com destaque para o menor custo do período e filtro rápido para Business/First.
+- Página de detalhes com lista de trips/segmentos carregados a partir do `availability_id`.
+- Opção de login (email/senha ou Google) usando Supabase, com recuperação de créditos do backend.
+- Toasts de feedback para erros e estados vazios amigáveis.
 
-## 4) Páginas
+## Integração com o backend
 
-- `index.html` — home + buscar (usa 1 crédito; se sua busca real existir, substitua `doYourSearch` em `js/app.js`).
-- `credits.html` — escolher plano e abrir checkout (planos `PRICE_5`, `PRICE_20`, `PRICE_100`, `PRICE_UNLIMITED`).
-- `history.html` — extrato do usuário.
-- `success.html` / `cancel.html` — pós-checkout.
-- `auth/callback.html` — página de retorno do login por e-mail / OAuth.
+Endpoints utilizados:
 
-## 5) Endpoints esperados no backend
+- `GET /api/search?origin=...&destination=...&start_date=...&days_to_search=...&sources=...&cabins=...`
+- `GET /api/trips?id=<availability_id>`
+- `GET /api/airports?q=<termo>`
+- (autenticado) `GET /api/credits`
 
-- `GET /api/credits` → `{ balance }`
-- `POST /api/credits/spend` → body `{ amount, ref, reason }`
-- `POST /api/stripe/create-checkout-session` → body `{ plan, quantity }` → `{ url }`
-- `GET /api/credits/history?limit=30` → `{ items: [...] }`
-- (opcional) `POST /api/credits/refund`
+Para as rotas autenticadas, o token do Supabase é enviado automaticamente no header `Authorization`.
 
-Tudo com `Authorization: Bearer <access_token>` do Supabase.
+## Deploy no Lovable / Vercel
+
+1. Configure as variáveis de ambiente listadas acima.
+2. Faça o deploy via `pnpm build` ou utilize o modo estático do Lovable apontando para a pasta `dist` gerada pelo Vite.
+3. Garanta que o redirect do Supabase (`Authentication → URL Configuration`) aponte para `VITE_SUPABASE_REDIRECT_URL`.
+
+Pronto! A interface estará disponível com todas as funcionalidades descritas na especificação.

@@ -4,13 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
-import { X, Mail, Lock, User } from 'lucide-react'
-import { signIn, signUp } from '../lib/supabase'
+import { X, Mail, Lock, Loader2, Chrome } from 'lucide-react'
+import { signIn, signUp, signInWithGoogle } from '../lib/supabase'
 
 const AuthModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [googleLoading, setGoogleLoading] = useState(false)
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -32,8 +33,8 @@ const AuthModal = ({ isOpen, onClose }) => {
     setSuccess('')
 
     try {
-      const { data, error } = await signIn(loginData.email, loginData.password)
-      
+      const { error } = await signIn(loginData.email, loginData.password)
+
       if (error) {
         throw error
       }
@@ -46,6 +47,25 @@ const AuthModal = ({ isOpen, onClose }) => {
       setError(error.message || 'Erro ao fazer login')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const { error } = await signInWithGoogle()
+      if (error) {
+        throw error
+      }
+
+      setSuccess('Redirecionando para login com Google...')
+    } catch (error) {
+      setError(error.message || 'Erro ao iniciar login com Google')
+    } finally {
+      setGoogleLoading(false)
     }
   }
 
@@ -68,8 +88,8 @@ const AuthModal = ({ isOpen, onClose }) => {
     }
 
     try {
-      const { data, error } = await signUp(signupData.email, signupData.password)
-      
+      const { error } = await signUp(signupData.email, signupData.password)
+
       if (error) {
         throw error
       }
@@ -157,6 +177,22 @@ const AuthModal = ({ isOpen, onClose }) => {
                       {loading ? 'Entrando...' : 'Entrar'}
                     </Button>
                   </form>
+                  <div className="mt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full flex items-center justify-center space-x-2"
+                      onClick={handleGoogleLogin}
+                      disabled={googleLoading}
+                    >
+                      {googleLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Chrome className="h-4 w-4" />
+                      )}
+                      <span>{googleLoading ? 'Conectando...' : 'Entrar com Google'}</span>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

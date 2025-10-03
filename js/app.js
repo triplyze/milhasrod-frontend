@@ -1,3 +1,4 @@
+/* global supabase */
 // /js/app.js
 (function () {
   const C = window.APP_CONFIG || {};

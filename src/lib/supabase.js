@@ -27,6 +27,15 @@ export const signOut = async () => {
   return { error }
 }
 
+export const signInWithGoogle = async () => {
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: import.meta.env.VITE_SUPABASE_REDIRECT_URL || window.location.origin
+    }
+  })
+}
+
 export const getCurrentUser = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   return user
